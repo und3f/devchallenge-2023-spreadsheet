@@ -25,7 +25,7 @@ func TestRecursiveFormula(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, _, err := solver.Solve("var1")
+	result, _, _, err := solver.Solve("var1")
 
 	assert.NoError(t, err)
 	assert.Equal(t, "1", result)
@@ -41,7 +41,7 @@ func TestCache(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, _, err := solver.Solve("var1")
+	result, _, _, err := solver.Solve("var1")
 
 	assert.NoError(t, err)
 	assert.Equal(t, "3", result)
@@ -57,7 +57,7 @@ func TestCycleDependency(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, _, err := solver.Solve("var1")
+	result, _, _, err := solver.Solve("var1")
 
 	assert.NoError(t, err)
 	assert.Equal(t, "ERROR", result)
@@ -71,7 +71,7 @@ func TestCycleDependency2(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, _, err := solver.Solve("var1")
+	result, _, _, err := solver.Solve("var1")
 
 	assert.NoError(t, err)
 	assert.Equal(t, "ERROR", result)

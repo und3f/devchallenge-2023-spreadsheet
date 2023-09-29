@@ -41,7 +41,7 @@ func CreateUpsertPayload(value string) *bytes.Reader {
 	return bytes.NewReader(jsonBody)
 }
 
-func TestPostSpreadsheetVar1(t *testing.T) {
+func TestUpsertSimpleVarSuccess(t *testing.T) {
 	tctx := NewTestContext()
 
 	tctx.mock.
@@ -51,8 +51,6 @@ func TestPostSpreadsheetVar1(t *testing.T) {
 				"var1": "0",
 			},
 		).SetVal(1)
-
-	tctx.mock.ExpectHGet("devchallenge-xx", "var1").SetVal("0")
 
 	request, _ := http.NewRequest(
 		http.MethodPost,
@@ -73,7 +71,7 @@ func TestPostSpreadsheetVar1(t *testing.T) {
 	assert.NoError(t, tctx.mock.ExpectationsWereMet())
 }
 
-func TestPostInvalidCellId(t *testing.T) {
+func TestUpsertInvalidCellIdFail(t *testing.T) {
 	tctx := NewTestContext()
 
 	request, _ := http.NewRequest(
@@ -93,7 +91,7 @@ func TestPostInvalidCellId(t *testing.T) {
 	assert.NoError(t, tctx.mock.ExpectationsWereMet())
 }
 
-func TestPostSpreadsheetCaseInsensitive(t *testing.T) {
+func TestUpsertCaseInsensitiveSuccess(t *testing.T) {
 	tctx := NewTestContext()
 
 	tctx.mock.
@@ -103,8 +101,6 @@ func TestPostSpreadsheetCaseInsensitive(t *testing.T) {
 				"var2": "1",
 			},
 		).SetVal(1)
-
-	tctx.mock.ExpectHGet("devchallenge-xx", "var2").SetVal("1")
 
 	request, _ := http.NewRequest(
 		http.MethodPost,
@@ -125,8 +121,11 @@ func TestPostSpreadsheetCaseInsensitive(t *testing.T) {
 	assert.NoError(t, tctx.mock.ExpectationsWereMet())
 }
 
-func TestPostSpreadsheetFormula(t *testing.T) {
+func TestUpsertFormulaSuccess(t *testing.T) {
 	tctx := NewTestContext()
+
+	tctx.mock.ExpectHGet("devchallenge-xx", "var1").SetVal("1")
+	tctx.mock.ExpectHGet("devchallenge-xx", "var2").SetVal("2")
 
 	tctx.mock.
 		ExpectHSet(
@@ -135,10 +134,6 @@ func TestPostSpreadsheetFormula(t *testing.T) {
 				"var3": "=var1+var2",
 			},
 		).SetVal(1)
-
-	tctx.mock.ExpectHGet("devchallenge-xx", "var3").SetVal("=var1+var2")
-	tctx.mock.ExpectHGet("devchallenge-xx", "var1").SetVal("1")
-	tctx.mock.ExpectHGet("devchallenge-xx", "var2").SetVal("2")
 
 	request, _ := http.NewRequest(
 		http.MethodPost,
@@ -155,6 +150,30 @@ func TestPostSpreadsheetFormula(t *testing.T) {
 	assert.Equal(t, 201, response.Code)
 	assert.Equal(t, "=var1+var2", resp.Value)
 	assert.Equal(t, "3", resp.Result)
+
+	assert.NoError(t, tctx.mock.ExpectationsWereMet())
+}
+
+func TestPostFormulaError(t *testing.T) {
+	tctx := NewTestContext()
+
+	tctx.mock.ExpectHGet("devchallenge-xx", "var2").SetVal("2")
+
+	request, _ := http.NewRequest(
+		http.MethodPost,
+		"/devchallenge-xx/var1",
+		CreateUpsertPayload("=var2+var1"),
+	)
+	response := httptest.NewRecorder()
+
+	tctx.router.ServeHTTP(response, request)
+
+	var resp CellResponse
+	json.NewDecoder(response.Body).Decode(&resp)
+
+	assert.Equal(t, http.StatusUnprocessableEntity, response.Code)
+	assert.Equal(t, "=var2+var1", resp.Value)
+	assert.Equal(t, "ERROR", resp.Result)
 
 	assert.NoError(t, tctx.mock.ExpectationsWereMet())
 }

@@ -32,18 +32,26 @@ func (s *Service) upsert(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := s.dao.SetCell(sheetId, cellId, payload.Value); err != nil {
+	solver := formula.NewSolver(s.dao, sheetId)
+	solver.SetCell(cellId, payload.Value)
+	result, value, formulaError, err := solver.Solve(cellId)
+	if err != nil {
 		log.Print(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	solver := formula.NewSolver(s.dao, sheetId)
-	result, value, err := solver.Solve(cellId)
-	if err != nil {
-		log.Print(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	var responseStatus int
+
+	if formulaError == nil {
+		if err := s.dao.SetCell(sheetId, cellId, payload.Value); err != nil {
+			log.Print(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		responseStatus = http.StatusCreated
+	} else {
+		responseStatus = http.StatusUnprocessableEntity
 	}
 
 	var resp CellResponse
@@ -51,6 +59,6 @@ func (s *Service) upsert(w http.ResponseWriter, r *http.Request) {
 	resp.Result = result
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(responseStatus)
 	json.NewEncoder(w).Encode(&resp)
 }

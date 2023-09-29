@@ -18,7 +18,7 @@ func TestSimpleSovle(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, value, err := solver.Solve("var3")
+	result, value, _, err := solver.Solve("var3")
 	assert.NoError(t, err)
 	assert.Equal(t, "=var1+var2", value)
 	assert.Equal(t, "3", result)
@@ -33,7 +33,7 @@ func TestCaseInsensitive(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, value, err := solver.Solve("var3")
+	result, value, _, err := solver.Solve("var3")
 	assert.NoError(t, err)
 	assert.Equal(t, "=vAr1+VAR2", value)
 	assert.Equal(t, "3", result)
@@ -50,7 +50,7 @@ func TestAllOperations(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, _, err := solver.Solve("var5")
+	result, _, _, err := solver.Solve("var5")
 	assert.NoError(t, err)
 	assert.Equal(t, "6", result)
 }
@@ -63,7 +63,7 @@ func TestFloat(t *testing.T) {
 	mock.ExpectHGet("devchallenge-xx", "var3").SetVal("2.2")
 
 	solver := NewSolver(dao, "devchallenge-xx")
-	result, _, err := solver.Solve("var1")
+	result, _, _, err := solver.Solve("var1")
 
 	assert.NoError(t, err)
 	resultF, err := strconv.ParseFloat(result, 32)
@@ -79,7 +79,7 @@ func TestIntAndFloatResultsFloat(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, _, err := solver.Solve("var1")
+	result, _, _, err := solver.Solve("var1")
 
 	assert.NoError(t, err)
 	resultF, err := strconv.ParseFloat(result, 32)

@@ -31,11 +31,6 @@ func NewSolver(dao *model.Dao, spreadsheet string) *Solver {
 	}
 }
 
-func (s *Solver) Solve(cellId string) (result string, value string, err error) {
-	result, value, _, err = s.solve(cellId)
-	return
-}
-
 func (s *Solver) LoadAllKeys() (err error) {
 	data, err := s.dao.GetAllCells(s.spreadsheet)
 	if err != nil {
@@ -49,7 +44,12 @@ func (s *Solver) LoadAllKeys() (err error) {
 	return nil
 }
 
-func (s *Solver) solve(cellId string) (result string, value string, formulaError error, err error) {
+func (s *Solver) SetCell(cellId string, value string) {
+	cellId = strings.ToLower(cellId)
+	s.values[cellId] = value
+}
+
+func (s *Solver) Solve(cellId string) (result string, value string, formulaError error, err error) {
 	cellId = strings.ToLower(cellId)
 
 	value, err = s.getValue(cellId)

@@ -120,7 +120,7 @@ func evalNumericOperator[V int64 | float64](op token.Token, x V, y V) (V, error)
 }
 
 func (s *Solver) expandVariable(lit *ast.Ident) (*ast.BasicLit, error) {
-	result, _, formulaErr, err := s.solve(lit.Name)
+	result, _, formulaErr, err := s.Solve(lit.Name)
 	if err != nil {
 		return nil, err
 	} else if formulaErr != nil {

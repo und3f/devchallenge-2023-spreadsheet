@@ -19,7 +19,7 @@ func TestStrings(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, _, err := solver.Solve("var1")
+	result, _, _, err := solver.Solve("var1")
 
 	assert.NoError(t, err)
 	assert.Equal(t, "abc!@_*.%á", result)
@@ -34,7 +34,7 @@ func TestNoBinaryOperatorsForStrings(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, _, err := solver.Solve("var1")
+	result, _, _, err := solver.Solve("var1")
 
 	assert.NoError(t, err)
 	assert.Equal(t, "ERROR", result)
@@ -55,7 +55,7 @@ func FuzzString(f *testing.F) {
 
 		solver := NewSolver(dao, "devchallenge-xx")
 
-		result, _, err := solver.Solve("var1")
+		result, _, _, err := solver.Solve("var1")
 
 		if err != nil || result != s {
 			t.Errorf("%q, %v", result, err)

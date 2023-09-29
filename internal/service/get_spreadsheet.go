@@ -39,7 +39,7 @@ func (s *Service) getSpreadsheet(w http.ResponseWriter, r *http.Request) {
 	solver := formula.NewSolver(s.dao, sheetId)
 	solver.LoadAllKeys()
 	for _, cellId := range keys {
-		result, value, err := solver.Solve(cellId)
+		result, value, _, err := solver.Solve(cellId)
 		if err != nil {
 			log.Print(err)
 			w.WriteHeader(http.StatusInternalServerError)

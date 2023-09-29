@@ -27,7 +27,7 @@ func (s *Service) getCell(w http.ResponseWriter, r *http.Request) {
 	}
 
 	solver := formula.NewSolver(s.dao, sheetId)
-	result, value, err := solver.Solve(cellId)
+	result, value, _, err := solver.Solve(cellId)
 	if err != nil {
 		if err == redis.Nil {
 			w.WriteHeader(http.StatusNotFound)
