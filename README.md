@@ -1,4 +1,4 @@
-# Spreadsheet
+# Spreadsheet backend
 
 ## Test
 
@@ -9,13 +9,15 @@ To execute tests separately run:
 docker build --target test .
 ```
 
-Also you may locally execute tests by running:
+Also you may execute tests locally by running:
 
 ```
 go test ./...
 ```
 
 ## Run
+
+To start application simply run
 
 ```
 docker compose up
