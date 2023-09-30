@@ -4,25 +4,12 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"strings"
 	"text/scanner"
-	"unicode"
 )
 
 func ParseExpr(src string, name string) (expr ast.Expr, err error) {
-	var s scanner.Scanner
-
-	s.Init(strings.NewReader(src))
-	s.Filename = "percent"
-	s.Mode = scanner.ScanIdents | scanner.ScanInts | scanner.ScanFloats
-
-	s.IsIdentRune = func(ch rune, i int) bool {
-		return unicode.IsLetter(ch) || i > 0 &&
-			(unicode.IsDigit(ch) || ch == '%' || ch == '_')
-	}
-
 	p := &Parser{
-		scanner: s,
+		scanner: NewScanner(src, name),
 	}
 	p.next()
 
@@ -68,23 +55,11 @@ func (p *Parser) parseUnaryExpr() ast.Expr {
 	case token.ADD, token.SUB:
 		op := p.tok
 		p.next()
-		x := p.parseUnaryExpr()
+		x := p.parseOperand()
 		return &ast.UnaryExpr{X: x, Op: op}
 	}
 
-	return p.parsePrimaryExpr(nil)
-}
-
-func (p *Parser) parsePrimaryExpr(x ast.Expr) ast.Expr {
-	if x == nil {
-		x = p.parseOperand()
-	}
-	/*
-		switch (p.tok) {
-			case token.IDENT
-		}
-	*/
-	return x
+	return p.parseOperand()
 }
 
 func (p *Parser) parseOperand() ast.Expr {
@@ -106,6 +81,7 @@ func (p *Parser) parseOperand() ast.Expr {
 		return &ast.ParenExpr{X: x}
 	}
 
+	p.error(fmt.Errorf("Unexpected operand %s", p.tok.String()))
 	return &ast.BadExpr{}
 
 }
@@ -144,6 +120,6 @@ func (p *Parser) next() {
 	if tok, exists := tokenConverter[r]; exists {
 		p.tok = tok
 	} else {
-		p.error(fmt.Errorf("Unexpected rune: %q", r))
+		p.error(fmt.Errorf("Unexpected character occured: %q", r))
 	}
 }
