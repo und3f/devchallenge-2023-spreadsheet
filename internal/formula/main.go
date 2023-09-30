@@ -7,9 +7,13 @@ import (
 
 	"devchallenge.it/spreadsheet/internal/formula/parser"
 	"devchallenge.it/spreadsheet/internal/model"
+	"github.com/redis/go-redis/v9"
 )
 
 const ERROR = "ERROR"
+
+var CYCLE_DEPENDECY_ERROR = errors.New("Cycle dependency")
+var NO_SUCH_CELL = errors.New("No such cellId")
 
 type Solver struct {
 	dao         *model.Dao
@@ -54,6 +58,10 @@ func (s *Solver) Solve(cellId string) (result string, value string, formulaError
 
 	value, err = s.getValue(cellId)
 	if err != nil {
+		if err == redis.Nil {
+			err = nil
+			formulaError = NO_SUCH_CELL
+		}
 		return
 	}
 
@@ -67,7 +75,7 @@ func (s *Solver) Solve(cellId string) (result string, value string, formulaError
 	}
 
 	if _, exists := s.visited[cellId]; exists {
-		return ERROR, value, errors.New("Cycle dependency"), err
+		return ERROR, value, CYCLE_DEPENDECY_ERROR, err
 	}
 
 	s.visited[cellId] = struct{}{}

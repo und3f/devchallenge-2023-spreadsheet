@@ -42,6 +42,7 @@ func (s *Service) upsert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var responseStatus int
+	var errorMsg *string
 
 	if formulaError == nil {
 		if err := s.dao.SetCell(sheetId, cellId, payload.Value); err != nil {
@@ -52,11 +53,15 @@ func (s *Service) upsert(w http.ResponseWriter, r *http.Request) {
 		responseStatus = http.StatusCreated
 	} else {
 		responseStatus = http.StatusUnprocessableEntity
+		errorMsg = new(string)
+		*errorMsg = formulaError.Error()
 	}
 
-	var resp CellResponse
-	resp.Value = value
-	resp.Result = result
+	resp := CellResponse{
+		Value:  value,
+		Result: result,
+		Error:  errorMsg,
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(responseStatus)

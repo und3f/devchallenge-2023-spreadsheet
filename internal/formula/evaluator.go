@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
-	"go/parser"
 	"go/token"
 	"strconv"
+
+	"devchallenge.it/spreadsheet/internal/formula/parser"
 )
 
 func (s *Solver) evalNode(n ast.Node) (*ast.BasicLit, error) {
@@ -34,6 +35,8 @@ func (s *Solver) evalNode(n ast.Node) (*ast.BasicLit, error) {
 		}
 		lit1 := &ast.BasicLit{Value: "0", Kind: lit2.Kind}
 		return s.evalBinOperator(lit1, lit2, nod.Op)
+	case *ast.BadExpr:
+		return nil, fmt.Errorf("Expression parsing failed")
 	}
 
 	return nil, fmt.Errorf("Expression %T not supported", n)
@@ -41,7 +44,10 @@ func (s *Solver) evalNode(n ast.Node) (*ast.BasicLit, error) {
 
 func (s *Solver) evalBinOperator(litX, litY *ast.BasicLit, op token.Token) (*ast.BasicLit, error) {
 	kind := token.INT
-	if litX.Kind == token.FLOAT || litY.Kind == token.FLOAT {
+
+	if litX.Kind == token.STRING || litY.Kind == token.STRING {
+		kind = token.STRING
+	} else if litX.Kind == token.FLOAT || litY.Kind == token.FLOAT {
 		kind = token.FLOAT
 	}
 
@@ -53,7 +59,7 @@ func (s *Solver) evalBinOperator(litX, litY *ast.BasicLit, op token.Token) (*ast
 	}
 
 	return nil,
-		fmt.Errorf("binary operator not supported for type %s", litX.Kind.String())
+		fmt.Errorf("arithmetic operation not supported for type %s", litX.Kind.String())
 }
 
 func (s *Solver) evalIntBinOperator(op token.Token, litX, litY *ast.BasicLit) (*ast.BasicLit, error) {
@@ -127,7 +133,7 @@ func (s *Solver) expandVariable(lit *ast.Ident) (*ast.BasicLit, error) {
 		return nil, formulaErr
 	}
 
-	expr, err := parser.ParseExpr(result)
+	expr, err := parser.ParseExpr(result, lit.Name)
 	if err != nil {
 		return createStringLit(result), nil
 	}

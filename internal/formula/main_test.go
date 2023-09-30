@@ -57,10 +57,13 @@ func TestCycleDependency(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, _, _, err := solver.Solve("var1")
+	result, _, formulaError, err := solver.Solve("var1")
 
 	assert.NoError(t, err)
-	assert.Equal(t, "ERROR", result)
+	if assert.Error(t, formulaError) {
+		assert.Equal(t, CYCLE_DEPENDECY_ERROR, formulaError)
+	}
+	assert.Equal(t, ERROR, result)
 }
 
 func TestCycleDependency2(t *testing.T) {
@@ -71,8 +74,26 @@ func TestCycleDependency2(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, _, _, err := solver.Solve("var1")
+	result, _, formulaError, err := solver.Solve("var1")
 
 	assert.NoError(t, err)
+	if assert.Error(t, formulaError) {
+		assert.Equal(t, CYCLE_DEPENDECY_ERROR, formulaError)
+	}
+	assert.Equal(t, "ERROR", result)
+}
+
+func TestInvalidFormula(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	dao := model.NewDao(rdb)
+
+	mock.ExpectHGet("devchallenge-xx", "var1").SetVal("=(1*2")
+
+	solver := NewSolver(dao, "devchallenge-xx")
+
+	result, _, formulaError, err := solver.Solve("var1")
+
+	assert.NoError(t, err)
+	assert.Error(t, formulaError)
 	assert.Equal(t, "ERROR", result)
 }

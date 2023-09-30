@@ -76,7 +76,7 @@ func TestUpsertInvalidCellIdFail(t *testing.T) {
 
 	request, _ := http.NewRequest(
 		http.MethodPost,
-		"/devchallenge-xx/var%bc",
+		"/devchallenge-xx/var+bc",
 		CreateUpsertPayload("0"),
 	)
 	response := httptest.NewRecorder()

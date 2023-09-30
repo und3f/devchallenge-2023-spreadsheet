@@ -7,12 +7,12 @@ import (
 
 	"devchallenge.it/spreadsheet/internal/formula"
 	"github.com/gorilla/mux"
-	"github.com/redis/go-redis/v9"
 )
 
 type CellResponse struct {
-	Value  string `json:"value"`
-	Result string `json:"result"`
+	Value  string  `json:"value"`
+	Result string  `json:"result"`
+	Error  *string `json:"error,omitempty"`
 }
 
 func (s *Service) getCell(w http.ResponseWriter, r *http.Request) {
@@ -27,21 +27,28 @@ func (s *Service) getCell(w http.ResponseWriter, r *http.Request) {
 	}
 
 	solver := formula.NewSolver(s.dao, sheetId)
-	result, value, _, err := solver.Solve(cellId)
+	result, value, formulaError, err := solver.Solve(cellId)
 	if err != nil {
-		if err == redis.Nil {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-
 		log.Printf("Failed to get cell: %s", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	if formulaError == formula.NO_SUCH_CELL {
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	var errorMsg *string
+	if formulaError != nil {
+		errorMsg = new(string)
+		*errorMsg = formulaError.Error()
+	}
+
 	resp := CellResponse{
 		Value:  value,
 		Result: result,
+		Error:  errorMsg,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
