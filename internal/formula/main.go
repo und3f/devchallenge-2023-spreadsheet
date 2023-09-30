@@ -3,9 +3,9 @@ package formula
 import (
 	"errors"
 	"go/ast"
-	"go/parser"
 	"strings"
 
+	"devchallenge.it/spreadsheet/internal/formula/parser"
 	"devchallenge.it/spreadsheet/internal/model"
 )
 
@@ -72,7 +72,7 @@ func (s *Solver) Solve(cellId string) (result string, value string, formulaError
 
 	s.visited[cellId] = struct{}{}
 
-	tr, formulaError := parser.ParseExpr(value[1:])
+	tr, formulaError := parser.ParseExpr(value[1:], cellId)
 	if formulaError != nil {
 		result = ERROR
 		return
@@ -112,7 +112,7 @@ func IsFormula(value string) bool {
 
 // TODO: support URI compliant variables
 func IsVariable(value string) bool {
-	tr, err := parser.ParseExpr(value)
+	tr, err := parser.ParseExpr(value, "")
 	if err != nil {
 		return false
 	}
