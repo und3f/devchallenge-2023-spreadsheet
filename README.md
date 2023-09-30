@@ -70,6 +70,8 @@ curl -X POST localhost:8080/api/v1/devchallenge-xx/說 -d '{"value": "=á._+拿"
 
 So `1abc` is not valid variable name as it starts with a number, not a letter.
 
+Both cell and spreadsheet identifiers length is limited by the http protocol.
+
 ### Circular formulas
 
 In case of circular dependency in formula result would be error. In a case of
