@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
-	"strconv"
+	"math/big"
 
 	"devchallenge.it/spreadsheet/internal/formula/parser"
 )
@@ -47,7 +47,7 @@ func (s *Solver) evalBinOperator(litX, litY *ast.BasicLit, op token.Token) (*ast
 
 	if litX.Kind == token.STRING || litY.Kind == token.STRING {
 		kind = token.STRING
-	} else if litX.Kind == token.FLOAT || litY.Kind == token.FLOAT {
+	} else if litX.Kind == token.FLOAT || litY.Kind == token.FLOAT || op == token.QUO {
 		kind = token.FLOAT
 	}
 
@@ -63,69 +63,70 @@ func (s *Solver) evalBinOperator(litX, litY *ast.BasicLit, op token.Token) (*ast
 }
 
 func (s *Solver) evalIntBinOperator(op token.Token, litX, litY *ast.BasicLit) (*ast.BasicLit, error) {
-	x, err := strconv.ParseInt(litX.Value, 10, 64)
-	if err != nil {
-		return nil, err
+	x, y := &big.Int{}, &big.Int{}
+	if _, ok := x.SetString(litX.Value, 10); !ok {
+		return nil, errors.New("int parsing failure")
 	}
 
-	y, err := strconv.ParseInt(litY.Value, 10, 64)
-	if err != nil {
-		return nil, err
+	if _, ok := y.SetString(litY.Value, 10); !ok {
+		return nil, errors.New("int parsing failure")
 	}
 
-	r, err := evalNumericOperator(op, x, y)
-	if err != nil {
-		return nil, err
+	switch op {
+	case token.ADD:
+		x.Add(x, y)
+	case token.SUB:
+		x.Sub(x, y)
+	case token.MUL:
+		x.Mul(x, y)
+	case token.QUO:
+		if y.Cmp(big.NewInt(0)) == 0 {
+			return nil, errors.New("division by zero")
+		}
+		x.Div(x, y)
+	default:
+		return nil, errors.New("operation not supported")
 	}
 
 	return &ast.BasicLit{
-		Value: strconv.FormatInt(r, 10),
+		Value: x.Text(10),
 		Kind:  token.INT,
 	}, nil
 }
 
 func (s *Solver) evalFloatBinOperator(op token.Token, litX, litY *ast.BasicLit) (*ast.BasicLit, error) {
-	x, err := strconv.ParseFloat(litX.Value, 64)
+	x, y := &big.Float{}, &big.Float{}
+
+	_, _, err := x.Parse(litX.Value, 10)
 	if err != nil {
 		return nil, err
 	}
 
-	y, err := strconv.ParseFloat(litY.Value, 64)
+	_, _, err = y.Parse(litY.Value, 10)
 	if err != nil {
 		return nil, err
 	}
-
-	r, err := evalNumericOperator(op, x, y)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ast.BasicLit{
-		Value: strconv.FormatFloat(float64(r), 'f', -1, 64),
-		Kind:  token.FLOAT,
-	}, nil
-}
-
-func evalNumericOperator[V int64 | float64](op token.Token, x V, y V) (V, error) {
-	var r V
 
 	switch op {
 	case token.ADD:
-		r = x + y
+		x.Add(x, y)
 	case token.SUB:
-		r = x - y
+		x.Sub(x, y)
 	case token.MUL:
-		r = x * y
+		x.Mul(x, y)
 	case token.QUO:
-		if y == 0 {
-			return r, errors.New("division by zero")
+		if y.Cmp(big.NewFloat(0)) == 0 {
+			return nil, errors.New("division by zero")
 		}
-		r = x / y
+		x.Quo(x, y)
 	default:
-		return r, errors.New("operation not supported")
+		return nil, errors.New("operation not supported")
 	}
 
-	return r, nil
+	return &ast.BasicLit{
+		Value: x.Text('f', -1),
+		Kind:  token.FLOAT,
+	}, nil
 }
 
 func (s *Solver) expandVariable(lit *ast.Ident) (*ast.BasicLit, error) {

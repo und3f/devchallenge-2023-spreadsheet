@@ -1,8 +1,10 @@
 package service
 
 import (
+	"go/ast"
 	"net/http"
 
+	"devchallenge.it/spreadsheet/internal/formula/parser"
 	"devchallenge.it/spreadsheet/internal/model"
 	"github.com/gorilla/mux"
 )
@@ -34,4 +36,15 @@ func (s *Service) Mount(r *mux.Router) *mux.Router {
 		}).Methods(http.MethodGet)
 
 	return r
+}
+
+func IsVariable(value string) bool {
+	tr, err := parser.ParseExpr(value, "")
+	if err != nil {
+		return false
+	}
+
+	_, ok := tr.(*ast.Ident)
+
+	return ok
 }

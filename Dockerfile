@@ -9,7 +9,7 @@ COPY . .
 # Execute tests
 FROM base as test
 
-RUN ["go", "test", "./..."]
+RUN ["go", "test", "-v", "./..."]
 
 # Build executable
 FROM test as build

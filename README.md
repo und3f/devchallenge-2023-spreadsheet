@@ -6,13 +6,13 @@ The tests are executed during container build as a part of the `Dockerfile`.
 
 To execute tests separately run:
 ```
-docker build --target test .
+docker build --target test --progress plain --no-cache .
 ```
 
 Also you may execute tests locally by running:
 
 ```
-go test ./...
+go test -v ./...
 ```
 
 ## Run
@@ -106,6 +106,8 @@ curl -X POST localhost:8080/api/v1/devchallenge-xx/var2 -d '{"value": "=(var1)"}
 ```
 Result: `{"value":"=(var1)","result":"Some string"}`
 
+Also division of `INTEGER` by `INTEGER` would result in `FLOAT` type for precision.
+
 ### Formula expression
 
 You may specify unary operator right after a binary and it would be treated as
@@ -162,3 +164,18 @@ Next values are considered as the `FLOAT` value: `1.0`, `1.`, `-1.0`,
 
 Every other value would be treated as the `STRING` value: `some string`, `1.0.0`,
 `++1`
+
+### Numbers size
+
+Numbers size is not limited, next expression would evaluate correctly:
+```
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var2 -d '{"value": "18446744073709551615"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "=var2 * var2 * var2"}'
+```
+
+```json
+{
+    "result": "6277101735386680762814942322444851025767571854389858533375",
+    "value": "=var2 * var2 * var2"
+}
+```

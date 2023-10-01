@@ -20,7 +20,7 @@ func (s *Service) getCell(w http.ResponseWriter, r *http.Request) {
 	sheetId := vars["sheet_id"]
 	cellId := vars["cell_id"]
 
-	if !formula.IsVariable(cellId) {
+	if !IsVariable(cellId) {
 		log.Printf("Cell ID %q is not valid variable", cellId)
 		w.WriteHeader(http.StatusBadRequest)
 		return

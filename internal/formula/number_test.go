@@ -87,7 +87,7 @@ func TestDivideByIntZeroFail(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Error(t, formulaError)
-	assert.Equal(t, result, "ERROR")
+	assert.Equal(t, "ERROR", result)
 }
 
 func TestDivideByFloatZeroFail(t *testing.T) {
@@ -102,7 +102,7 @@ func TestDivideByFloatZeroFail(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Error(t, formulaError)
-	assert.Equal(t, result, "ERROR")
+	assert.Equal(t, "ERROR", result)
 }
 
 func TestParseNumberWithUnaryOp(t *testing.T) {
@@ -119,4 +119,19 @@ func TestParseNumberWithUnaryOp(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, formulaError)
 	assert.Equal(t, "-11", result)
+}
+
+func TestDivideIntByIntResultFloat(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	dao := model.NewDao(rdb)
+
+	mock.ExpectHGet("devchallenge-xx", "var1").SetVal("=1/2")
+
+	solver := NewSolver(dao, "devchallenge-xx")
+
+	result, _, formulaError, err := solver.Solve("var1")
+
+	assert.NoError(t, err)
+	assert.NoError(t, formulaError)
+	assert.Equal(t, "0.5", result)
 }

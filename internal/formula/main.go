@@ -2,7 +2,6 @@ package formula
 
 import (
 	"errors"
-	"go/ast"
 	"strings"
 
 	"devchallenge.it/spreadsheet/internal/formula/parser"
@@ -116,16 +115,4 @@ func (s *Solver) getValue(cellId string) (string, error) {
 
 func IsFormula(value string) bool {
 	return len(value) > 0 && value[0] == '='
-}
-
-// TODO: support URI compliant variables
-func IsVariable(value string) bool {
-	tr, err := parser.ParseExpr(value, "")
-	if err != nil {
-		return false
-	}
-
-	_, ok := tr.(*ast.Ident)
-
-	return ok
 }
