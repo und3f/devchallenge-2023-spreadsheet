@@ -39,22 +39,6 @@ curl localhost:8080/api/v1/devchallenge-xx/var1
 curl localhost:8080/api/v1/devchallenge-xx
 ```
 
-### REST response modification
-
-Additionally to required API format the optional field `error` has been added to the GET cell and UPSERT requests, e.g.
-```
-curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "=&this is invalid formula"}'
-```
-
-Would return:
-```json
-{
-    "error": "Unexpected rune: '&'",
-    "result": "ERROR",
-    "value": "=&this is invalid formula"
-}
-```
-
 ## Corner cases
 
 ### Cell identifies

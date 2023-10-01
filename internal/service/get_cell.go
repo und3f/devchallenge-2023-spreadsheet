@@ -10,9 +10,11 @@ import (
 )
 
 type CellResponse struct {
-	Value  string  `json:"value"`
-	Result string  `json:"result"`
-	Error  *string `json:"error,omitempty"`
+	Value  string `json:"value"`
+	Result string `json:"result"`
+
+	// Removed for API format compliance
+	Error *string `json:"-"`
 }
 
 func (s *Service) getCell(w http.ResponseWriter, r *http.Request) {
