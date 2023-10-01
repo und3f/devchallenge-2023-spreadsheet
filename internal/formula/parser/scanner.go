@@ -37,3 +37,16 @@ func NewScanner(src string, filename string) scanner.Scanner {
 
 	return s
 }
+
+func FindAllIdentifiers(src string) []string {
+	s := NewScanner(src, "")
+
+	var identifiers []string
+	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
+		if tok == scanner.Ident {
+			identifiers = append(identifiers, s.TokenText())
+		}
+	}
+
+	return identifiers
+}

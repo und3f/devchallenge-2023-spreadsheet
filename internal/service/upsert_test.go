@@ -44,6 +44,7 @@ func CreateUpsertPayload(value string) *bytes.Reader {
 func TestUpsertSimpleVarSuccess(t *testing.T) {
 	tctx := NewTestContext()
 
+	tctx.mock.ExpectSMembers("devchallenge-xx/var1").SetVal([]string{})
 	tctx.mock.
 		ExpectHSet(
 			"devchallenge-xx",
@@ -94,6 +95,7 @@ func TestUpsertInvalidCellIdFail(t *testing.T) {
 func TestUpsertCaseInsensitiveSuccess(t *testing.T) {
 	tctx := NewTestContext()
 
+	tctx.mock.ExpectSMembers("devchallenge-xx/var2").SetVal([]string{})
 	tctx.mock.
 		ExpectHSet(
 			"devchallenge-xx",
@@ -126,6 +128,7 @@ func TestUpsertFormulaSuccess(t *testing.T) {
 
 	tctx.mock.ExpectHGet("devchallenge-xx", "var1").SetVal("1")
 	tctx.mock.ExpectHGet("devchallenge-xx", "var2").SetVal("2")
+	tctx.mock.ExpectSMembers("devchallenge-xx/var3").SetVal([]string{})
 
 	tctx.mock.
 		ExpectHSet(
@@ -134,6 +137,8 @@ func TestUpsertFormulaSuccess(t *testing.T) {
 				"var3": "=var1+var2",
 			},
 		).SetVal(1)
+	tctx.mock.ExpectSAdd("devchallenge-xx/var1", []string{"var3"}).SetVal(1)
+	tctx.mock.ExpectSAdd("devchallenge-xx/var2", []string{"var3"}).SetVal(1)
 
 	request, _ := http.NewRequest(
 		http.MethodPost,
@@ -173,6 +178,33 @@ func TestPostFormulaError(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnprocessableEntity, response.Code)
 	assert.Equal(t, "=var2+var1", resp.Value)
+	assert.Equal(t, "ERROR", resp.Result)
+
+	assert.NoError(t, tctx.mock.ExpectationsWereMet())
+}
+
+func TestPostDependentFormulaError(t *testing.T) {
+	tctx := NewTestContext()
+
+	tctx.mock.ExpectSMembers("devchallenge-xx/var1").SetVal([]string{"var2"})
+	tctx.mock.ExpectHGet("devchallenge-xx", "var2").SetVal("=var1 - 1")
+	tctx.mock.ExpectSMembers("devchallenge-xx/var2").SetVal([]string{"var3"})
+	tctx.mock.ExpectHGet("devchallenge-xx", "var3").SetVal("=1/var2")
+
+	request, _ := http.NewRequest(
+		http.MethodPost,
+		"/devchallenge-xx/var1",
+		CreateUpsertPayload("1"),
+	)
+	response := httptest.NewRecorder()
+
+	tctx.router.ServeHTTP(response, request)
+
+	var resp CellResponse
+	json.NewDecoder(response.Body).Decode(&resp)
+
+	assert.Equal(t, http.StatusUnprocessableEntity, response.Code)
+	assert.Equal(t, "1", resp.Value)
 	assert.Equal(t, "ERROR", resp.Result)
 
 	assert.NoError(t, tctx.mock.ExpectationsWereMet())

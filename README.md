@@ -25,7 +25,6 @@ docker compose up
 
 ## REST operations
 
-
 ```
 # Set cell to a constant
 curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "123"}'
@@ -131,36 +130,30 @@ curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "=1/var2"}
 }
 ```
 
-### Break cell by changing referencing variable
+### Dependent cell breaking prevention
 
-You may make cell invalid by changing one of variables from number to string:
+The system prevents from breaking any dependant cell to be broken. Consider next case:
 ```
-curl -X POST localhost:8080/api/v1/devchallenge-xx/var2 -d '{"value": "1"}'
-curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "=var2 + 1"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var3 -d '{"value": "0"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var2 -d '{"value": "=var3 - 1"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "=1 / var2"}'
 
-# Now break var1 by changing var2
-curl -X POST localhost:8080/api/v1/devchallenge-xx/var2 -d '{"value": "text"}'
+# Next UPSERT would be rejected as it would break var1
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var3 -d '{"value": "1"}'
 
-curl localhost:8080/api/v1/devchallenge-xx/var1
-```
-
-Will return:
-```json
-{
-    "error": "arithmetic operation not supported for type STRING",
-    "result": "ERROR",
-    "value": "=var2 + 1"
-}
+# var3 is still 0
+curl localhost:8080/api/v1/devchallenge-xx/var3
 ```
 
 ### Cell value type determination
 
 Cell value that starts with `=` would be considered as the formula.
 
-Next values are considered as the `INT` value: `1`, `-1`, `+1`
+Sequence of digits optionally precedent with a plus or minus sign considered as
+`INT` value: `1`, `-1`, `+1`
 
-Next values are considered as the `FLOAT` value: `1.0`, `1.`, `-1.0`,
-`+1.0`
+If a number has fractional part it would be treated as a `FLOAT`
+value: `1.01`, `1.`, `-1.0`, `+1.0`
 
 Every other value would be treated as the `STRING` value: `some string`, `1.0.0`,
 `++1`
@@ -169,13 +162,17 @@ Every other value would be treated as the `STRING` value: `some string`, `1.0.0`
 
 Numbers size is not limited, next expression would evaluate correctly:
 ```
-curl -X POST localhost:8080/api/v1/devchallenge-xx/var2 -d '{"value": "18446744073709551615"}'
-curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "=var2 * var2 * var2"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/byte -d '{"value": "255"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/short -d '{"value": "=byte * byte"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/int32 -d '{"value": "=short * short"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/int64 -d '{"value": "=int32 * int32"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/int128 -d '{"value": "=int64 * int64"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/what_ever_you_want -d '{"value": "=int128 * int128 * int128 * int128 * int128"}'
 ```
 
 ```json
 {
-    "result": "6277101735386680762814942322444851025767571854389858533375",
-    "value": "=var2 * var2 * var2"
+    "result": "3335910840989723103946716225008276488526215899027251552832106642768471211926062170159900171395553219118558904881722547998563003168023964769375828837692267436754178788760327734053134918212890625",
+    "value": "=int128 * int128 * int128 * int128 * int128"
 }
 ```

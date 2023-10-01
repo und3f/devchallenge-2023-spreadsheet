@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"devchallenge.it/spreadsheet/internal/formula"
+	"devchallenge.it/spreadsheet/internal/formula/parser"
 	"github.com/gorilla/mux"
 )
 
@@ -45,11 +46,30 @@ func (s *Service) upsert(w http.ResponseWriter, r *http.Request) {
 	var errorMsg *string
 
 	if formulaError == nil {
+		formulaError, err = s.checkDependentFormula(sheetId, cellId, solver)
+		if err != nil {
+			log.Print(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if formulaError != nil {
+			result = "ERROR"
+		}
+	}
+
+	if formulaError == nil {
 		if err := s.dao.SetCell(sheetId, cellId, payload.Value); err != nil {
 			log.Print(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
+		if err := s.dao.AddDependatFormula(sheetId, cellId, parser.FindAllIdentifiers(payload.Value)); err != nil {
+			log.Print(err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		responseStatus = http.StatusCreated
 	} else {
 		responseStatus = http.StatusUnprocessableEntity
@@ -66,4 +86,25 @@ func (s *Service) upsert(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(responseStatus)
 	json.NewEncoder(w).Encode(&resp)
+}
+
+func (s *Service) checkDependentFormula(spreadsheet, cellId string, solver *formula.Solver) (formulaError error, err error) {
+	deps, err := s.dao.GetDependants(spreadsheet, cellId)
+	if err != nil {
+		return
+	}
+
+	for _, depCellId := range deps {
+		_, _, formulaError, _ = solver.Solve(depCellId)
+		if formulaError != nil {
+			return
+		}
+
+		formulaError, err = s.checkDependentFormula(spreadsheet, depCellId, solver)
+		if formulaError != nil || err != nil {
+			return
+		}
+	}
+
+	return
 }

@@ -45,5 +45,31 @@ func (dao *Dao) GetCell(spreadsheetId string, cellId string) (string, error) {
 }
 
 func (dao *Dao) GetAllCells(spreadsheetId string) (map[string]string, error) {
-	return dao.rdb.HGetAll(ctx, spreadsheetId).Result()
+	return dao.rdb.HGetAll(ctx, strings.ToLower(spreadsheetId)).Result()
+}
+
+func (dao *Dao) GetDependants(spreadsheetId string, cellId string) ([]string, error) {
+	return dao.rdb.SMembers(ctx, strings.ToLower(spreadsheetId)+"/"+strings.ToLower(cellId)).Result()
+}
+
+func (dao *Dao) AddDependatFormula(spreadsheetId string, cellId string, dependsOn []string) error {
+	for _, dependantCellId := range dependsOn {
+		err := dao.rdb.SAdd(ctx, strings.ToLower(spreadsheetId)+"/"+strings.ToLower(dependantCellId), cellId).Err()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (dao *Dao) DeleteDependatFormula(spreadsheetId string, cellId string, dependsOn []string) error {
+	for _, dependantCellId := range dependsOn {
+		err := dao.rdb.SRem(ctx, strings.ToLower(spreadsheetId)+"/"+strings.ToLower(dependantCellId), cellId).Err()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
