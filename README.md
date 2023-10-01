@@ -151,7 +151,7 @@ curl -X POST localhost:8080/api/v1/devchallenge-xx/short -d '{"value": "=byte * 
 curl -X POST localhost:8080/api/v1/devchallenge-xx/int32 -d '{"value": "=short * short"}'
 curl -X POST localhost:8080/api/v1/devchallenge-xx/int64 -d '{"value": "=int32 * int32"}'
 curl -X POST localhost:8080/api/v1/devchallenge-xx/int128 -d '{"value": "=int64 * int64"}'
-curl -X POST localhost:8080/api/v1/devchallenge-xx/what_ever_you_want -d '{"value": "=int128 * int128 * int128 * int128 * int128"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/whatever_you_want -d '{"value": "=int128 * int128 * int128 * int128 * int128"}'
 ```
 
 ```json
