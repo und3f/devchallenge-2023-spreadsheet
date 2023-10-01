@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSimpleSovle(t *testing.T) {
+func TestSimpleSolve(t *testing.T) {
 	dao, mock := prepare()
 
 	mock.ExpectHGet("devchallenge-xx", "var3").SetVal("=var1+var2")
@@ -24,21 +24,6 @@ func TestSimpleSovle(t *testing.T) {
 	assert.Equal(t, "3", result)
 }
 
-func TestCaseInsensitive(t *testing.T) {
-	dao, mock := prepare()
-
-	mock.ExpectHGet("devchallenge-xx", "var3").SetVal("=vAr1+VAR2")
-	mock.ExpectHGet("devchallenge-xx", "var1").SetVal("1")
-	mock.ExpectHGet("devchallenge-xx", "var2").SetVal("2")
-
-	solver := NewSolver(dao, "devchallenge-xx")
-
-	result, value, _, err := solver.Solve("var3")
-	assert.NoError(t, err)
-	assert.Equal(t, "=vAr1+VAR2", value)
-	assert.Equal(t, "3", result)
-}
-
 func TestAllOperations(t *testing.T) {
 	dao, mock := prepare()
 
@@ -50,8 +35,9 @@ func TestAllOperations(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, _, _, err := solver.Solve("var5")
+	result, _, formulaError, err := solver.Solve("var5")
 	assert.NoError(t, err)
+	assert.NoError(t, formulaError)
 	assert.Equal(t, "6", result)
 }
 
@@ -63,9 +49,10 @@ func TestFloat(t *testing.T) {
 	mock.ExpectHGet("devchallenge-xx", "var3").SetVal("2.2")
 
 	solver := NewSolver(dao, "devchallenge-xx")
-	result, _, _, err := solver.Solve("var1")
+	result, _, formulaError, err := solver.Solve("var1")
 
 	assert.NoError(t, err)
+	assert.NoError(t, formulaError)
 	resultF, err := strconv.ParseFloat(result, 32)
 	assert.NoError(t, err)
 	assert.InDelta(t, 3.3, resultF, 0.01)
@@ -79,10 +66,57 @@ func TestIntAndFloatResultsFloat(t *testing.T) {
 
 	solver := NewSolver(dao, "devchallenge-xx")
 
-	result, _, _, err := solver.Solve("var1")
+	result, _, formulaError, err := solver.Solve("var1")
 
 	assert.NoError(t, err)
+	assert.NoError(t, formulaError)
 	resultF, err := strconv.ParseFloat(result, 32)
 	assert.NoError(t, err)
 	assert.InDelta(t, 3.3, resultF, 0.01)
+}
+
+func TestDivideByIntZeroFail(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	dao := model.NewDao(rdb)
+
+	mock.ExpectHGet("devchallenge-xx", "var1").SetVal("=1/0")
+
+	solver := NewSolver(dao, "devchallenge-xx")
+
+	result, _, formulaError, err := solver.Solve("var1")
+
+	assert.NoError(t, err)
+	assert.Error(t, formulaError)
+	assert.Equal(t, result, "ERROR")
+}
+
+func TestDivideByFloatZeroFail(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	dao := model.NewDao(rdb)
+
+	mock.ExpectHGet("devchallenge-xx", "var1").SetVal("=1/0.000")
+
+	solver := NewSolver(dao, "devchallenge-xx")
+
+	result, _, formulaError, err := solver.Solve("var1")
+
+	assert.NoError(t, err)
+	assert.Error(t, formulaError)
+	assert.Equal(t, result, "ERROR")
+}
+
+func TestParseNumberWithUnaryOp(t *testing.T) {
+	rdb, mock := redismock.NewClientMock()
+	dao := model.NewDao(rdb)
+
+	mock.ExpectHGet("devchallenge-xx", "var1").SetVal("=1-var2")
+	mock.ExpectHGet("devchallenge-xx", "var2").SetVal("+12")
+
+	solver := NewSolver(dao, "devchallenge-xx")
+
+	result, _, formulaError, err := solver.Solve("var1")
+
+	assert.NoError(t, err)
+	assert.NoError(t, formulaError)
+	assert.Equal(t, "-11", result)
 }

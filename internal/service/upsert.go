@@ -25,7 +25,7 @@ func (s *Service) upsert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload UpsertPayload
-	err := json.NewDecoder(r.Body).Decode(&payload)
+	err := NewJsonDecoder(r.Body).Decode(&payload)
 	if err != nil {
 		log.Printf("Body decode error: %v", err)
 		w.WriteHeader(http.StatusBadRequest)

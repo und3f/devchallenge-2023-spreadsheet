@@ -59,7 +59,7 @@ func (s *Solver) evalBinOperator(litX, litY *ast.BasicLit, op token.Token) (*ast
 	}
 
 	return nil,
-		fmt.Errorf("arithmetic operation not supported for type %s", litX.Kind.String())
+		fmt.Errorf("arithmetic operation not supported for type %s", kind.String())
 }
 
 func (s *Solver) evalIntBinOperator(op token.Token, litX, litY *ast.BasicLit) (*ast.BasicLit, error) {
@@ -117,9 +117,12 @@ func evalNumericOperator[V int64 | float64](op token.Token, x V, y V) (V, error)
 	case token.MUL:
 		r = x * y
 	case token.QUO:
+		if y == 0 {
+			return r, errors.New("division by zero")
+		}
 		r = x / y
 	default:
-		return r, errors.New("Operation not supported")
+		return r, errors.New("operation not supported")
 	}
 
 	return r, nil
@@ -133,22 +136,11 @@ func (s *Solver) expandVariable(lit *ast.Ident) (*ast.BasicLit, error) {
 		return nil, formulaErr
 	}
 
-	expr, err := parser.ParseExpr(result, lit.Name)
+	resultLit := parser.ParseValue(result, lit.Name)
+	basicLit, err := s.evalNode(resultLit)
 	if err != nil {
-		return createStringLit(result), nil
+		return nil, err
 	}
 
-	res, isLit := expr.(*ast.BasicLit)
-	if !isLit || (res.Kind != token.INT && res.Kind != token.FLOAT) {
-		return createStringLit(result), nil
-	}
-
-	return res, nil
-}
-
-func createStringLit(value string) *ast.BasicLit {
-	return &ast.BasicLit{
-		Value: value,
-		Kind:  token.STRING,
-	}
+	return basicLit, nil
 }

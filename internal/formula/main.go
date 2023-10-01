@@ -115,7 +115,7 @@ func (s *Solver) getValue(cellId string) (string, error) {
 }
 
 func IsFormula(value string) bool {
-	return value[0] == '='
+	return len(value) > 0 && value[0] == '='
 }
 
 // TODO: support URI compliant variables

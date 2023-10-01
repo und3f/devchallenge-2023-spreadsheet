@@ -7,6 +7,12 @@ import (
 	"text/scanner"
 )
 
+type Parser struct {
+	scanner scanner.Scanner
+	tok     token.Token
+	err     error
+}
+
 func ParseExpr(src string, name string) (expr ast.Expr, err error) {
 	p := &Parser{
 		scanner: NewScanner(src, name),
@@ -16,17 +22,46 @@ func ParseExpr(src string, name string) (expr ast.Expr, err error) {
 	expr = p.parseExpr()
 	err = p.err
 
+	p.expect(token.EOF)
+
 	return
 }
 
-type Parser struct {
-	scanner scanner.Scanner
-	tok     token.Token
-	err     error
+func ParseValue(src string, filename string) (lit ast.Expr) {
+	p := &Parser{scanner: NewScanner(src, filename)}
+	p.next()
+
+	expr := p.parseUnaryExpr()
+	p.expect(token.EOF)
+	if p.err != nil {
+		return createStringLit(src)
+	}
+
+	switch op := expr.(type) {
+	case *ast.UnaryExpr:
+		if lit, ok := op.X.(*ast.BasicLit); ok {
+			if lit.Kind == token.INT || lit.Kind == token.FLOAT {
+				return op
+			}
+		}
+	case *ast.BasicLit:
+		return op
+	}
+
+	return createStringLit(src)
+}
+
+func createStringLit(value string) *ast.BasicLit {
+	return &ast.BasicLit{
+		Value: value,
+		Kind:  token.STRING,
+	}
 }
 
 func (p *Parser) parseExpr() ast.Expr {
-	return p.parseBinaryExpr(nil, token.LowestPrec+1)
+	expr := p.parseBinaryExpr(nil, token.LowestPrec+1)
+
+	return expr
 }
 
 func (p *Parser) parseBinaryExpr(x ast.Expr, prec1 int) ast.Expr {

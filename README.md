@@ -112,7 +112,24 @@ You may specify unary operator right after a binary and it would be treated as
 following token modifier, e.g. next formulas are legit: `=1 * -2` = -2,
 `=1 + -2` = -1, `=1 + +2` = 3
 
-### Break cell by changing referencing variable type
+### Division by zero
+
+You will receive `ERROR` during formula evaluation if division by zero occurs:
+
+```
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var2 -d '{"value": "0.0"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "=1/var2"}'
+```
+
+```json
+{
+    "error": "division by zero",
+    "result": "ERROR",
+    "value": "=1/var2"
+}
+```
+
+### Break cell by changing referencing variable
 
 You may make cell invalid by changing one of variables from number to string:
 ```
@@ -133,3 +150,15 @@ Will return:
     "value": "=var2 + 1"
 }
 ```
+
+### Cell value type determination
+
+Cell value that starts with `=` would be considered as the formula.
+
+Next values are considered as the `INT` value: `1`, `-1`, `+1`
+
+Next values are considered as the `FLOAT` value: `1.0`, `1.`, `-1.0`,
+`+1.0`
+
+Every other value would be treated as the `STRING` value: `some string`, `1.0.0`,
+`++1`
