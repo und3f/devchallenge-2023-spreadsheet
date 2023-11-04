@@ -21,6 +21,11 @@ func NewService(r *mux.Router, dao *model.Dao) *Service {
 }
 
 func (s *Service) Mount(r *mux.Router) *mux.Router {
+	s.subscribeRoute = r.HandleFunc("/sub/{subscribe_id}",
+		func(w http.ResponseWriter, r *http.Request) {
+			s.subscribeHook(w, r)
+		}).Methods(http.MethodGet)
+
 	r.HandleFunc("/{sheet_id}/{cell_id}",
 		func(w http.ResponseWriter, r *http.Request) {
 			s.upsert(w, r)
@@ -35,11 +40,6 @@ func (s *Service) Mount(r *mux.Router) *mux.Router {
 		func(w http.ResponseWriter, r *http.Request) {
 			s.subscribeCell(w, r)
 		}).Methods(http.MethodPost)
-
-	s.subscribeRoute = r.HandleFunc("/sub/{subscribe_id}",
-		func(w http.ResponseWriter, r *http.Request) {
-			s.subscribeHook(w, r)
-		}).Methods(http.MethodGet)
 
 	r.HandleFunc("/{sheet_id}",
 		func(w http.ResponseWriter, r *http.Request) {

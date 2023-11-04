@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/url"
 
+	"devchallenge.it/spreadsheet/internal/formula"
+	"devchallenge.it/spreadsheet/internal/model"
 	"github.com/gorilla/mux"
 )
 
@@ -54,4 +56,60 @@ func (s *Service) subscribeCell(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) subscribeHook(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	subId := vars["subscribe_id"]
+
+	subscriber, err := s.dao.Subscribe(subId)
+	if err != nil {
+		log.Printf("Failed to get subscription: %v", err)
+
+		if err == model.ERROR_NO_SUBSCRIPTION {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	data, _ := s.dao.GetSubscription(subId)
+	sheetId := data["spreadsheetId"]
+	cellId := data["cellId"]
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	f, _ := w.(http.Flusher)
+
+	encoder := json.NewEncoder(w)
+
+	for {
+		_, err := subscriber.ReceiveMessage(r.Context())
+		if err != nil {
+			log.Printf("Unexpected error: %v", err)
+			return
+		}
+
+		solver := formula.NewSolver(s.dao, sheetId)
+		result, value, formulaError, err := solver.Solve(cellId)
+		if err != nil {
+			log.Printf("Failed to get cell: %s", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		var errorMsg *string
+		if formulaError != nil {
+			errorMsg = new(string)
+			*errorMsg = formulaError.Error()
+		}
+		resp := CellResponse{
+			Value:  value,
+			Result: result,
+			Error:  errorMsg,
+		}
+
+		encoder.Encode(resp)
+		f.Flush()
+	}
 }

@@ -85,6 +85,8 @@ func (s *Service) upsert(w http.ResponseWriter, r *http.Request) {
 		*errorMsg = formulaError.Error()
 	}
 
+	s.notifyDependents(sheetId, cellId)
+
 	resp := CellResponse{
 		Value:  value,
 		Result: result,
@@ -115,4 +117,17 @@ func (s *Service) checkDependentFormula(spreadsheet, cellId string, solver *form
 	}
 
 	return
+}
+
+func (s *Service) notifyDependents(spreadsheet, cellId string) {
+	deps, err := s.dao.GetDependants(spreadsheet, cellId)
+	if err != nil {
+		return
+	}
+
+	s.dao.NotifyCellChange(spreadsheet, cellId)
+
+	for _, depCellId := range deps {
+		s.notifyDependents(spreadsheet, depCellId)
+	}
 }

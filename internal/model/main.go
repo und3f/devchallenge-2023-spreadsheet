@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -98,4 +99,39 @@ func (dao *Dao) CreateSubscription(spreadsheetId string, cellId string) (string,
 	}
 
 	return id, nil
+}
+
+func subscriptionPubSubKey(spreadsheetId, cellId string) string {
+	return fmt.Sprintf("pubsub:%s/%s", spreadsheetId, cellId)
+}
+
+var ERROR_NO_SUBSCRIPTION = errors.New("Unknown key")
+
+func (dao *Dao) GetSubscription(subId string) (map[string]string, error) {
+	data, err := dao.rdb.HGetAll(ctx, subscriptionKey(subId)).Result()
+	if err != nil {
+		return nil, err
+	}
+	if len(data) == 0 {
+		return nil, ERROR_NO_SUBSCRIPTION
+	}
+
+	return data, nil
+}
+
+func (dao *Dao) Subscribe(subId string) (*redis.PubSub, error) {
+	data, err := dao.GetSubscription(subId)
+	if err != nil {
+		return nil, err
+	}
+
+	return dao.rdb.Subscribe(
+			ctx,
+			subscriptionPubSubKey(data["spreadsheetId"], data["cellId"]),
+		),
+		nil
+}
+
+func (dao *Dao) NotifyCellChange(spreadsheetId, cellId string) error {
+	return dao.rdb.Publish(ctx, subscriptionPubSubKey(spreadsheetId, cellId), nil).Err()
 }
