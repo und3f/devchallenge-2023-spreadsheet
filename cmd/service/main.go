@@ -25,10 +25,22 @@ func main() {
 
 	service.NewService(apiV1Router, dao)
 
-	http.Handle("/", router)
+	http.Handle("/", WithLogging(router))
 
 	log.Printf("Starting webserver at %q", ListenAddr)
 	if err := http.ListenAndServe(ListenAddr, nil); err != nil {
 		log.Fatalf("Failed to start server: %s", err)
 	}
+}
+
+func WithLogging(h http.Handler) http.Handler {
+	logFn := func(rw http.ResponseWriter, r *http.Request) {
+		uri := r.RequestURI
+		method := r.Method
+		h.ServeHTTP(rw, r) // serve the original request
+
+		log.Printf("%s [%s]", method, uri)
+	}
+
+	return http.HandlerFunc(logFn)
 }
