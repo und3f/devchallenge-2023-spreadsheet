@@ -57,6 +57,10 @@ func (dao *Dao) GetDependants(spreadsheetId string, cellId string) ([]string, er
 
 func (dao *Dao) AddDependatFormula(spreadsheetId string, cellId string, dependsOn []string) error {
 	for _, dependantCellId := range dependsOn {
+		if dependantCellId == cellId {
+			continue
+		}
+
 		err := dao.rdb.SAdd(ctx, strings.ToLower(spreadsheetId)+"/"+strings.ToLower(dependantCellId), cellId).Err()
 		if err != nil {
 			return err

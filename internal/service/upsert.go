@@ -101,6 +101,7 @@ func (s *Service) upsert(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) checkDependentFormula(spreadsheet, cellId string, solver *formula.Solver) (formulaError error, err error) {
+	log.Printf("check, %s", cellId)
 	deps, err := s.dao.GetDependants(spreadsheet, cellId)
 	if err != nil {
 		return
