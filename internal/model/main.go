@@ -2,6 +2,8 @@ package model
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/redis/go-redis/v9"
@@ -72,4 +74,28 @@ func (dao *Dao) DeleteDependatFormula(spreadsheetId string, cellId string, depen
 	}
 
 	return nil
+}
+
+func subscriptionKey(id string) string {
+	return fmt.Sprintf("subscription:%s", id)
+}
+
+func (dao *Dao) CreateSubscription(spreadsheetId string, cellId string) (string, error) {
+	idVal, err := dao.rdb.Incr(ctx, "subscription:counter").Result()
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Print(idVal)
+	id := strconv.FormatInt(idVal, 16)
+
+	if err := dao.rdb.HSet(ctx, subscriptionKey(id),
+		"spreadsheetId",
+		strings.ToLower(spreadsheetId),
+		"cellId",
+		strings.ToLower(cellId)).Err(); err != nil {
+		return "", err
+	}
+
+	return id, nil
 }

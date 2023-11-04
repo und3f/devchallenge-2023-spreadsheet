@@ -10,7 +10,8 @@ import (
 )
 
 type Service struct {
-	dao *model.Dao
+	dao            *model.Dao
+	subscribeRoute *mux.Route
 }
 
 func NewService(r *mux.Router, dao *model.Dao) *Service {
@@ -30,12 +31,24 @@ func (s *Service) Mount(r *mux.Router) *mux.Router {
 			s.getCell(w, r)
 		}).Methods(http.MethodGet)
 
+	r.HandleFunc("/{sheet_id}/{cell_id}/subscribe",
+		func(w http.ResponseWriter, r *http.Request) {
+			s.subscribeCell(w, r)
+		}).Methods(http.MethodPost)
+
+	s.subscribeRoute = r.HandleFunc("/sub/{subscribe_id}",
+		func(w http.ResponseWriter, r *http.Request) {
+			s.subscribeHook(w, r)
+		}).Methods(http.MethodGet)
+
 	r.HandleFunc("/{sheet_id}",
 		func(w http.ResponseWriter, r *http.Request) {
 			s.getSpreadsheet(w, r)
 		}).Methods(http.MethodGet)
 
 	r.HandleFunc("/{sheet_id}/{cell_id}", CorsHandler).Methods(http.MethodOptions)
+	r.HandleFunc("/{sheet_id}/{cell_id}/subscribe", CorsHandler).Methods(http.MethodOptions)
+	r.HandleFunc("/sub/{subscribe_id}", CorsHandler).Methods(http.MethodOptions)
 	r.HandleFunc("/{sheet_id}", CorsHandler).Methods(http.MethodOptions)
 	r.Use(mux.CORSMethodMiddleware(r))
 
