@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 
 	"devchallenge.it/spreadsheet/internal/formula"
 	"devchallenge.it/spreadsheet/internal/formula/parser"
@@ -21,6 +22,13 @@ func (s *Service) upsert(w http.ResponseWriter, r *http.Request) {
 
 	if !IsVariable(cellId) {
 		log.Printf("Cell ID %q is not valid variable", cellId)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	contentType := r.Header.Get("Content-Type")
+	if strings.Compare(contentType, "application/json") != 0 {
+		log.Printf("Upsert invalid content type %s", contentType)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

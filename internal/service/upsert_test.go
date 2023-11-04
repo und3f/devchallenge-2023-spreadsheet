@@ -58,6 +58,7 @@ func TestUpsertSimpleVarSuccess(t *testing.T) {
 		"/devchallenge-xx/var1",
 		CreateUpsertPayload("0"),
 	)
+	request.Header.Add("Content-Type", "application/json")
 	response := httptest.NewRecorder()
 
 	tctx.router.ServeHTTP(response, request)
@@ -80,6 +81,7 @@ func TestUpsertInvalidCellIdFail(t *testing.T) {
 		"/devchallenge-xx/var+bc",
 		CreateUpsertPayload("0"),
 	)
+	request.Header.Add("Content-Type", "application/json")
 	response := httptest.NewRecorder()
 
 	tctx.router.ServeHTTP(response, request)
@@ -109,6 +111,7 @@ func TestUpsertCaseInsensitiveSuccess(t *testing.T) {
 		"/DevChallenge-XX/VAR2",
 		CreateUpsertPayload("1"),
 	)
+	request.Header.Add("Content-Type", "application/json")
 	response := httptest.NewRecorder()
 
 	tctx.router.ServeHTTP(response, request)
@@ -145,6 +148,7 @@ func TestUpsertFormulaSuccess(t *testing.T) {
 		"/devchallenge-xx/var3",
 		CreateUpsertPayload("=var1+var2"),
 	)
+	request.Header.Add("Content-Type", "application/json")
 	response := httptest.NewRecorder()
 
 	tctx.router.ServeHTTP(response, request)
@@ -169,6 +173,7 @@ func TestPostFormulaError(t *testing.T) {
 		"/devchallenge-xx/var1",
 		CreateUpsertPayload("=var2+var1"),
 	)
+	request.Header.Add("Content-Type", "application/json")
 	response := httptest.NewRecorder()
 
 	tctx.router.ServeHTTP(response, request)
@@ -196,6 +201,7 @@ func TestPostDependentFormulaError(t *testing.T) {
 		"/devchallenge-xx/var1",
 		CreateUpsertPayload("1"),
 	)
+	request.Header.Add("Content-Type", "application/json")
 	response := httptest.NewRecorder()
 
 	tctx.router.ServeHTTP(response, request)

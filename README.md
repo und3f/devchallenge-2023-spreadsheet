@@ -102,8 +102,8 @@ following token modifier, e.g. next formulas are legit: `=1 * -2` = -2,
 You will receive `ERROR` during formula evaluation if division by zero occurs:
 
 ```
-curl -X POST localhost:8080/api/v1/devchallenge-xx/var2 -d '{"value": "0.0"}'
-curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "=1/var2"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var2 -d '{"value": "0.0"}' -H "Content-Type: application/json"
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "=1/var2"}' -H "Content-Type: application/json"
 ```
 
 ```json
@@ -118,12 +118,12 @@ curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "=1/var2"}
 
 The system prevents from breaking any dependant cell to be broken. Consider next case:
 ```
-curl -X POST localhost:8080/api/v1/devchallenge-xx/var3 -d '{"value": "0"}'
-curl -X POST localhost:8080/api/v1/devchallenge-xx/var2 -d '{"value": "=var3 - 1"}'
-curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "=1 / var2"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var3 -d '{"value": "0"}' -H "Content-Type: application/json"
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var2 -d '{"value": "=var3 - 1"}' -H "Content-Type: application/json"
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var1 -d '{"value": "=1 / var2"}' -H "Content-Type: application/json"
 
 # Next UPSERT would be rejected as it would break var1
-curl -X POST localhost:8080/api/v1/devchallenge-xx/var3 -d '{"value": "1"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/var3 -d '{"value": "1"}' -H "Content-Type: application/json"
 
 # var3 is still 0
 curl localhost:8080/api/v1/devchallenge-xx/var3
@@ -146,12 +146,14 @@ Every other value would be treated as the `STRING` value: `some string`, `1.0.0`
 
 Numbers size is not limited, next expression would evaluate correctly:
 ```
-curl -X POST localhost:8080/api/v1/devchallenge-xx/byte -d '{"value": "255"}'
-curl -X POST localhost:8080/api/v1/devchallenge-xx/short -d '{"value": "=byte * byte"}'
-curl -X POST localhost:8080/api/v1/devchallenge-xx/int32 -d '{"value": "=short * short"}'
-curl -X POST localhost:8080/api/v1/devchallenge-xx/int64 -d '{"value": "=int32 * int32"}'
-curl -X POST localhost:8080/api/v1/devchallenge-xx/int128 -d '{"value": "=int64 * int64"}'
-curl -X POST localhost:8080/api/v1/devchallenge-xx/whatever_you_want -d '{"value": "=int128 * int128 * int128 * int128 * int128"}'
+curl -X POST localhost:8080/api/v1/devchallenge-xx/byte -d '{"value": "255"}' -H "Content-Type: application/json"
+curl -X POST localhost:8080/api/v1/devchallenge-xx/short -d '{"value": "=byte * byte"}' -H "Content-Type: application/json"
+curl -X POST localhost:8080/api/v1/devchallenge-xx/int32 -d '{"value": "=short * short"}' -H "Content-Type: application/json"
+curl -X POST localhost:8080/api/v1/devchallenge-xx/int64 -d '{"value": "=int32 * int32"}' -H "Content-Type: application/json"
+curl -X POST localhost:8080/api/v1/devchallenge-xx/int128 -d '{"value": "=int64 * int64"}' -H "Content-Type: application/json"
+curl -X POST localhost:8080/api/v1/devchallenge-xx/whatever_you_want \
+    -d '{"value": "=int128 * int128 * int128 * int128 * int128"}' \
+    -H "Content-Type: application/json"
 ```
 
 ```json
