@@ -35,6 +35,8 @@ func (s *Solver) evalNode(n ast.Node) (*ast.BasicLit, error) {
 		}
 		lit1 := &ast.BasicLit{Value: "0", Kind: lit2.Kind}
 		return s.evalBinOperator(lit1, lit2, nod.Op)
+	case *ast.CallExpr:
+		return s.evalCall(nod)
 	case *ast.BadExpr:
 		return nil, fmt.Errorf("Expression parsing failed")
 	}

@@ -13,6 +13,7 @@ var reservedCharacters map[rune]struct{} = map[rune]struct{}{
 	'/': struct{}{},
 	'(': struct{}{},
 	')': struct{}{},
+	',': struct{}{},
 }
 
 func NewScanner(src string, filename string) scanner.Scanner {

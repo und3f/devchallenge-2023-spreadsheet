@@ -90,11 +90,44 @@ func (p *Parser) parseUnaryExpr() ast.Expr {
 	case token.ADD, token.SUB:
 		op := p.tok
 		p.next()
-		x := p.parseOperand()
+		x := p.parseUnaryExpr()
 		return &ast.UnaryExpr{X: x, Op: op}
 	}
 
-	return p.parseOperand()
+	return p.parsePrimaryExpr()
+}
+
+func (p *Parser) parsePrimaryExpr() ast.Expr {
+	x := p.parseOperand()
+
+	switch p.tok {
+	case token.LPAREN:
+		x = p.parseCall(x)
+	}
+
+	return x
+
+}
+
+func (p *Parser) parseCall(fun ast.Expr) ast.Expr {
+	p.expect(token.LPAREN)
+
+	var list []ast.Expr
+	for p.tok != token.LPAREN && p.tok != token.EOF {
+		list = append(list, p.parseExpr())
+
+		if !(p.tok == token.COMMA) {
+			break
+		}
+		p.next()
+	}
+
+	p.expect(token.RPAREN)
+
+	return &ast.CallExpr{
+		Fun:  fun,
+		Args: list,
+	}
 }
 
 func (p *Parser) parseOperand() ast.Expr {
@@ -132,6 +165,7 @@ var tokenConverter map[rune]token.Token = map[rune]token.Token{
 	'/':           token.QUO,
 	'(':           token.LPAREN,
 	')':           token.RPAREN,
+	',':           token.COMMA,
 }
 
 func (p *Parser) error(err error) {
