@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 )
 
 type CellResponse struct {
@@ -12,7 +13,11 @@ type CellResponse struct {
 }
 
 func RestGetCell(url string) (string, error) {
-	resp, err := http.Get(url)
+	client := http.Client{
+		Timeout: 1 * time.Second,
+	}
+
+	resp, err := client.Get(url)
 	if err != nil {
 		return "", err
 	}
