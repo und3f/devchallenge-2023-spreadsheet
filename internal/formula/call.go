@@ -1,6 +1,7 @@
 package formula
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -8,6 +9,9 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+
+	"devchallenge.it/spreadsheet/internal/formula/parser"
+	"devchallenge.it/spreadsheet/internal/service/client"
 )
 
 type FormulaFun func(s *Solver, args []*ast.BasicLit) (*ast.BasicLit, error)
@@ -25,6 +29,10 @@ func (s *Solver) evalCall(call *ast.CallExpr) (*ast.BasicLit, error) {
 		return nil, fmt.Errorf("Invalid function name literal type: %T", call.Fun)
 	}
 	funName := strings.ToUpper(funIdent.Name)
+
+	if strings.Compare(funName, "EXTERNAL_REF") == 0 {
+		return evalExternalRef(s, call.Args)
+	}
 
 	fun, exists := formulaFunctions[funName]
 
@@ -118,4 +126,29 @@ func evalMax(s *Solver, args []*ast.BasicLit) (*ast.BasicLit, error) {
 	}
 
 	return args[maxI], nil
+}
+
+func evalExternalRef(s *Solver, args []ast.Expr) (*ast.BasicLit, error) {
+	if len(args) != 1 {
+		return nil, errors.New("EXTERNAL_REF expects single argument")
+	}
+
+	ident, ok := args[0].(*ast.Ident)
+	if !ok {
+		return nil, fmt.Errorf("Invalid EXTERNAL_REF argument type: %s", args[0])
+	}
+
+	url := ident.Name
+	val, err := client.RestGetCell(url)
+	if err != nil {
+		return nil, err
+	}
+
+	resultLit := parser.ParseValue(val, url)
+	basicLit, err := s.evalNode(resultLit)
+	if err != nil {
+		return nil, err
+	}
+
+	return basicLit, nil
 }

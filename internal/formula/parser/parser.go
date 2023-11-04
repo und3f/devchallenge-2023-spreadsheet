@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"strings"
 	"text/scanner"
 )
 
@@ -11,11 +12,13 @@ type Parser struct {
 	scanner scanner.Scanner
 	tok     token.Token
 	err     error
+	str     string
 }
 
 func ParseExpr(src string, name string) (expr ast.Expr, err error) {
 	p := &Parser{
 		scanner: NewScanner(src, name),
+		str:     src,
 	}
 	p.next()
 
@@ -28,7 +31,7 @@ func ParseExpr(src string, name string) (expr ast.Expr, err error) {
 }
 
 func ParseValue(src string, filename string) (lit ast.Expr) {
-	p := &Parser{scanner: NewScanner(src, filename)}
+	p := &Parser{scanner: NewScanner(src, filename), str: src}
 	p.next()
 
 	expr := p.parseUnaryExpr()
@@ -112,6 +115,13 @@ func (p *Parser) parsePrimaryExpr() ast.Expr {
 func (p *Parser) parseCall(fun ast.Expr) ast.Expr {
 	p.expect(token.LPAREN)
 
+	//Fixup url for EXTERNAL_REF
+	if ident, is := fun.(*ast.Ident); is {
+		if strings.Compare(ident.Name, "EXTERNAL_REF") == 0 {
+			return p.parseExternalRefCall(ident)
+		}
+	}
+
 	var list []ast.Expr
 	for p.tok != token.LPAREN && p.tok != token.EOF {
 		list = append(list, p.parseExpr())
@@ -127,6 +137,27 @@ func (p *Parser) parseCall(fun ast.Expr) ast.Expr {
 	return &ast.CallExpr{
 		Fun:  fun,
 		Args: list,
+	}
+}
+
+func (p *Parser) parseExternalRefCall(ident *ast.Ident) ast.Expr {
+	url := []rune(p.scanner.TokenText())
+
+	for p.scanner.Peek() != ')' {
+		url = append(url, p.scanner.Peek())
+		p.scanner.Next()
+	}
+
+	p.next()
+	p.expect(token.RPAREN)
+
+	return &ast.CallExpr{
+		Fun: ident,
+		Args: []ast.Expr{
+			&ast.Ident{
+				Name: string(url),
+			},
+		},
 	}
 }
 
