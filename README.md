@@ -20,7 +20,7 @@ go test -v ./...
 To start application simply run:
 
 ```
-docker compose up
+docker compose up --build
 ```
 
 ## REST operations

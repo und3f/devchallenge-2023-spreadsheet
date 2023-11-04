@@ -85,7 +85,9 @@ func (s *Service) upsert(w http.ResponseWriter, r *http.Request) {
 		*errorMsg = formulaError.Error()
 	}
 
-	s.notifyDependents(sheetId, cellId)
+	if errorMsg == nil {
+		s.notifyDependents(sheetId, cellId)
+	}
 
 	resp := CellResponse{
 		Value:  value,

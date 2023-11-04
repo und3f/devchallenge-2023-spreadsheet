@@ -14,7 +14,7 @@ type CellResponse struct {
 	Result string `json:"result"`
 
 	// Removed for API format compliance
-	Error *string `json:"omitifempty"`
+	Error *string `json:"error,omitempty"`
 }
 
 func (s *Service) getCell(w http.ResponseWriter, r *http.Request) {
