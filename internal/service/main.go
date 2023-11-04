@@ -35,7 +35,16 @@ func (s *Service) Mount(r *mux.Router) *mux.Router {
 			s.getSpreadsheet(w, r)
 		}).Methods(http.MethodGet)
 
+	r.HandleFunc("/{sheet_id}/{cell_id}", CorsHandler).Methods(http.MethodOptions)
+	r.HandleFunc("/{sheet_id}", CorsHandler).Methods(http.MethodOptions)
+	r.Use(mux.CORSMethodMiddleware(r))
+
 	return r
+}
+
+func CorsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Max-Age", "86400")
 }
 
 func IsVariable(value string) bool {
